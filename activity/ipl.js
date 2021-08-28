@@ -97,9 +97,8 @@ function getBattingData(html) {
   }
 }
 
-function fillDir(t_name, pName, pRun, pBall, pFour, pSix, pStrike, count) {
-  let directory = process.cwd();
-  let m_Folder = path.join(directory, "ipl");
+function fillDir(t_name, pName, pRun, pBall, pFour, pSix, pStrike) {
+  let m_Folder = path.join(__dirname, "ipl");
   if (!fs.existsSync(m_Folder)) {
     console.log("folder not present");
     fs.mkdirSync(m_Folder);
@@ -108,36 +107,49 @@ function fillDir(t_name, pName, pRun, pBall, pFour, pSix, pStrike, count) {
   if (!fs.existsSync(t_path)) {
     fs.mkdirSync(t_path);
   }
-  let p_path = path.join(t_path, pName + ".json");
+  let p_path = path.join(t_path, pName + ".xlsx");
+  let p_Data = [];
+  let p_obj = {
+    t_name,
+    pName,
+    pRun,
+    pBall,
+    pFour,
+    pSix,
+    pStrike,
+  };
 
   if (!fs.existsSync(p_path)) {
-    let p_Data = [
-      {
-        My_Team_name: t_name,
-        Name: pName,
-        Run: pRun,
-        Balls: pBall,
-        Fours: pFour,
-        Sixes: pSix,
-        Strike_Rate: pStrike,
-      },
-    ];
-    p_Data = JSON.stringify(p_Data);
-    fs.writeFileSync(p_path, p_Data);
+    p_Data.push(p_obj);
   } else {
-    let p_Data = {
-      My_Team_name: t_name,
-      Name: pName,
-      Run: pRun,
-      Balls: pBall,
-      Fours: pFour,
-      Sixes: pSix,
-      Strike_Rate: pStrike,
-    };
-    let content = fs.readFileSync(p_path);
-    content = JSON.parse(content);
-    content.push(p_Data);
-    let n_Data = JSON.stringify(content);
-    fs.writeFileSync(p_path, n_Data);
+    p_Data = excelReader(p_path, pName);
+    p_Data.push(p_obj);
   }
+  excelWriter(p_path, p_Data, pName);
+}
+
+function excelWriter(filePath, json, sheetName) {
+  // workbook create
+  let newWB = xlsx.utils.book_new();
+  // worksheet
+  let newWS = xlsx.utils.json_to_sheet(json);
+  xlsx.utils.book_append_sheet(newWB, newWS, sheetName);
+  // excel file create
+  xlsx.writeFile(newWB, filePath);
+}
+
+// // json data -> excel format convert
+// // -> newwb , ws , sheet name
+// // filePath
+// read
+//  workbook get
+
+function excelReader(filePath, sheetName) {
+  // player workbook
+  let wb = xlsx.readFile(filePath);
+  // get data from a particular sheet in that wb
+  let excelData = wb.Sheets[sheetName];
+  // sheet to json
+  let ans = xlsx.utils.sheet_to_json(excelData);
+  return ans;
 }
